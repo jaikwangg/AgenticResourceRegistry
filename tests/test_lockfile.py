@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Hari Srinivasan <harisrini21@gmail.com>
 # SPDX-FileCopyrightText: 2026 Lokesh <lokeshselvam7025@gmail.com>
 # SPDX-FileCopyrightText: 2026 Kaushik <kaushikrjpm10@gmail.com>
+# SPDX-FileCopyrightText: 2026 Worakij <worakij.w@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
 
 """Focused coverage for the CLI lockfile store."""
@@ -1029,6 +1030,27 @@ def test_marker_migration_with_no_markers_writes_an_empty_schema(isolated_lockfi
         "registries": {},
     }
     assert lockfile.migrate_agent_markers() == 0
+
+
+def test_marker_migration_logs_an_unreadable_sync_state(isolated_lockfile, monkeypatch, tmp_path):
+    from io import StringIO
+
+    from loguru import logger
+
+    home = tmp_path / "home"
+    home.mkdir()
+    isolated_lockfile.config_dir.mkdir(parents=True)
+    (isolated_lockfile.config_dir / "sync_state.json").write_text("{broken", encoding="utf-8")
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setattr(Path, "cwd", lambda: home)
+    stream = StringIO()
+    sink = logger.add(stream, level="DEBUG", format="{message}")
+    try:
+        assert lockfile.migrate_agent_markers() == 0
+    finally:
+        logger.remove(sink)
+    assert "sync_state.json unreadable" in stream.getvalue()
+    assert "error=Expecting property name" in stream.getvalue()
 
 
 def test_marker_migration_deduplicates_projects_and_cleans_valid_markers(isolated_lockfile, monkeypatch, tmp_path):

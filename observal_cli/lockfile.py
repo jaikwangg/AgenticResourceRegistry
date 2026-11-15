@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2026 Shaan Narendran <shaannaren06@gmail.com>
 # SPDX-FileCopyrightText: 2026 Lokesh <lokeshselvam7025@gmail.com>
 # SPDX-FileCopyrightText: 2026 Kaushik <kaushikrjpm10@gmail.com>
+# SPDX-FileCopyrightText: 2026 Worakij <worakij.w@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
 
 """Lock file management for Observal CLI.
@@ -749,8 +750,8 @@ def migrate_agent_markers() -> int:
             json.loads(state_file.read_text())
             # sync_state keys are session IDs, but we can look for project markers
             # in common directories. Better approach: scan home for .observal/agent files.
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError, UnicodeError) as exc:
+            optic.debug("sync_state.json unreadable during marker migration: error={}", exc)
 
     # Scan common locations for .observal/agent files
     home = Path.home()
